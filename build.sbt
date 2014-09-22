@@ -15,6 +15,6 @@ libraryDependencies ++= Seq(
 
 herokuJdkVersion in Compile := "1.8"
 
-herokuJdkUrl in Compile := "http://lang-jvm.s3.amazonaws.com/jdk/openjdk1.8.0_20.tar.gz"
+herokuJdkUrl in Compile := "http://heroku-jdk.s3.amazonaws.com/openjdk1.8.0_b107.tar.gz"
 
 herokuAppName in Compile := "polar-citadel-1715"
