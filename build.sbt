@@ -1,0 +1,14 @@
+import NativePackagerKeys._
+
+packageArchetype.java_application
+
+name := """scala-getting-started"""
+
+version := "1.0"
+
+scalaVersion := "2.10.4"
+
+libraryDependencies ++= Seq(
+  "com.twitter" % "finagle-http_2.10" % "6.18.0",
+  "com.stripe" % "stripe-java" % "1.18.0"
+)
