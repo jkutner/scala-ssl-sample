@@ -6,12 +6,12 @@ import com.twitter.finagle.http.Response
 import java.net.InetSocketAddress
 import org.jboss.netty.handler.codec.http._
 import util.Properties
-import java.net.URI
+
+import java.io.{InputStream, FileNotFoundException, InputStreamReader, BufferedReader}
+import java.net.URL
+import javax.net.ssl.HttpsURLConnection
 
 import scala.collection.JavaConversions._
-import com.stripe.model.Charge
-import com.stripe.exception.StripeException
-import com.stripe.Stripe
 
 object Server {
   def main(args: Array[String]) {
@@ -27,33 +27,37 @@ class Hello extends Service[HttpRequest, HttpResponse] {
   def apply(request: HttpRequest): Future[HttpResponse] = {
     val response = Response()
 
-    Stripe.apiKey = System.getenv("STRIPE_API_KEY")
+    val urlStr = "https://httpbin.org/get?show_env=1"
+    val url = new URL(urlStr)
+    val con = url.openConnection.asInstanceOf[HttpsURLConnection]
+    con.setDoInput(true)
+    con.setRequestMethod("GET")
 
-    val cardParams = mapAsJavaMap(Map(
-      "number" -> "4242424242424242",
-      "exp_month" -> 12,
-      "exp_year"-> 2020
-    )).asInstanceOf[java.util.Map[java.lang.String, java.lang.Object]]
-
-    val chargeParams = mapAsJavaMap(Map(
-      "amount" -> 100, // 1 dollar
-      "currency" -> "usd",
-      "description" -> "Stripe debug test",
-      "card" -> cardParams
-    )).asInstanceOf[java.util.Map[java.lang.String, java.lang.Object]]
-
-    try {
-      val charge = Charge.create(chargeParams)
-      println("Successfully processed test charge: " + charge)
-      response.setContentString("Done!")
-    } catch {
-      case se: StripeException => {
-        println("Failed to process test charge")
-        println(se.printStackTrace.toString)
-        response.setContentString("Failed!")
-      }
-    }
+    val r = handleResponse(con)
+    response.setContentString(r)
 
     Future(response)
+  }
+
+  def handleResponse(con: HttpsURLConnection): String = {
+    try {
+      readStream(con.getInputStream)
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        val output = readStream(con.getErrorStream)
+        throw new Exception("HTTP " + String.valueOf(con.getResponseCode) + ": " + e.getMessage)
+    }
+  }
+
+  def readStream(is: InputStream): String = {
+    val reader = new BufferedReader(new InputStreamReader(is))
+    var output = ""
+    var tmp = reader.readLine
+    while (tmp != null) {
+      output += tmp
+      tmp = reader.readLine
+    }
+    output
   }
 }
